@@ -1,40 +1,40 @@
-# Stitch Cut — Editor de Vídeo Multicamadas 4K
+# Stitch Cut — Multitrack 4K Video Editor
 
-Editor de vídeo desktop (Tauri + React) com timeline multicamadas, corte preciso e export em MP4 H.264 via ffmpeg.
+Desktop video editor (Tauri + React) with a multitrack timeline, precise cutting, and MP4 H.264 export via ffmpeg.
 
 ## Features
 
-- **Tela inicial padrão**: nome do projeto, presets 4K UHD / Full HD / HD e recentes que reabrem de verdade (localStorage)
-- **Media Pool**: import de vídeo/áudio real com duração e resolução detectadas
-- **Preview Program**: player sincronizado com o playhead da timeline
-- **Timeline multicamadas**: tracks V2/V1/A1, zoom, split no playhead (✂), trim In/Out, mute/lock
-- **Inspector**: ajuste numérico de start/In/Out, excluir clipe, export por clipe ou da timeline
-- **Export**: clipe ou timeline completa em MP4 H.264 (app Tauri); no browser, export de clipe em WebM
+- **Standard home screen**: project name, 4K UHD / Full HD / HD presets, and recents that actually reopen (localStorage)
+- **Media Pool**: real video/audio import with detected duration and resolution
+- **Program Preview**: player synced to the timeline playhead
+- **Multitrack timeline**: V2/V1/A1 tracks, zoom, split at playhead (✂), In/Out trim, mute/lock
+- **Inspector**: numeric start/In/Out trimming, clip delete, per-clip or full-timeline export
+- **Export**: clip or full timeline as MP4 H.264 (Tauri app); in-browser clip export as WebM
 
 ## Stack
 
 - Frontend: React 18 + TypeScript + Vite + Zustand + Vitest
-- Backend: Rust + Tauri 2.0 (commands + TimelineService com TDD)
-- Vídeo: ffmpeg/ffprobe (sistema) para probe e export
+- Backend: Rust + Tauri 2.0 (commands + TDD TimelineService)
+- Video: system ffmpeg/ffprobe for probing and export
 
-## Pré-requisitos
+## Prerequisites
 
 - Node 22 + npm
-- Rust stable
-- ffmpeg no PATH: `brew install ffmpeg`
+- Stable Rust
+- ffmpeg on PATH: `brew install ffmpeg`
 
-## Desenvolvimento
+## Development
 
 ```bash
 npm install
-npm run dev          # frontend em http://localhost:1420
-npm run tauri dev    # app desktop
+npm run dev          # frontend at http://localhost:1420
+npm run tauri dev    # desktop app
 ```
 
-## Qualidade
+## Quality Gates
 
 ```bash
-npm run test:run     # 63 testes Vitest
+npm run test:run     # 63 Vitest tests
 npm run typecheck    # tsc --noEmit
 npm run lint         # eslint
 npm run format       # prettier --write
@@ -42,9 +42,9 @@ npm run format:check # pre-commit + CI
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-Pre-commit (husky + lint-staged) roda prettier, eslint e typecheck. O CI (`.github/workflows/ci.yml`) valida frontend e backend, incluindo `cargo clippy -- -D warnings`.
+The pre-commit hook (husky + lint-staged) runs prettier, eslint, and typecheck. CI (`.github/workflows/ci.yml`) validates frontend and backend, including `cargo clippy -- -D warnings`.
 
-## Estrutura
+## Layout
 
 ```
 src/                    # React: components/, stores/, lib/, types/
