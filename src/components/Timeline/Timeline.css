@@ -1,0 +1,137 @@
+.timeline {
+  display: flex;
+  flex-direction: column;
+  background: #1a1a2e;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.timeline--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+.timeline__header {
+  padding: 8px 16px;
+  background: #16213e;
+  border-bottom: 1px solid #333;
+}
+
+.timeline__duration {
+  color: #999;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.timeline__tracks {
+  flex: 1;
+  overflow-x: auto;
+  position: relative;
+}
+
+.timeline__empty-message {
+  color: #666;
+  text-align: center;
+  padding: 40px;
+}
+
+.track-row {
+  display: flex;
+  border-bottom: 1px solid #333;
+  min-height: 50px;
+}
+
+.track-row--selected {
+  background: rgba(66, 133, 244, 0.1);
+}
+
+.track-row__header {
+  width: 150px;
+  padding: 8px;
+  background: #16213e;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid #333;
+  flex-shrink: 0;
+}
+
+.track-row__name {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.track-row__type {
+  color: #666;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.track-row__clips {
+  position: relative;
+  flex: 1;
+  background: #0f3460;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 49px,
+    rgba(255, 255, 255, 0.05) 49px,
+    rgba(255, 255, 255, 0.05) 50px
+  );
+}
+
+.clip {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  background: linear-gradient(135deg, #4285f4, #34a853);
+  border-radius: 4px;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  transition: transform 0.1s;
+}
+
+.clip:hover {
+  transform: scaleY(1.05);
+}
+
+.clip--selected {
+  outline: 2px solid #fff;
+  box-shadow: 0 0 10px rgba(66, 133, 244, 0.5);
+}
+
+.clip__label {
+  color: #fff;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #ea4335;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.playhead::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  background: #ea4335;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}

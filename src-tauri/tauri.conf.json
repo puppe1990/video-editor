@@ -1,0 +1,30 @@
+{
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420"
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all"
+  },
+  "productName": "Video Editor",
+  "version": "0.1.0",
+  "identifier": "com.videoeditor.app",
+  "plugins": {},
+  "app": {
+    "windows": [
+      {
+        "title": "Video Editor",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 800,
+        "minHeight": 600
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  }
+}
