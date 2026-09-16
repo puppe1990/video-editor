@@ -1,14 +1,19 @@
 import { create } from "zustand";
-import type { Project, Track, Clip, TrackType, ProjectConfig } from "../types";
+import type { Project, Track, Clip, TrackType, ProjectConfig, MediaItem } from "../types";
 import { defaultProjectConfig } from "../types";
 
 interface ProjectState {
   project: Project | null;
+  media: MediaItem[];
   currentTime: number;
   isPlaying: boolean;
   zoom: number;
   selectedClipId: string | null;
   selectedTrackId: string | null;
+
+  // Media actions
+  addMedia: (item: MediaItem) => void;
+  removeMedia: (mediaId: string) => void;
 
   // Project actions
   createProject: (name: string, config?: ProjectConfig) => void;
@@ -25,12 +30,7 @@ interface ProjectState {
   addClip: (trackId: string, clip: Clip) => boolean;
   removeClip: (trackId: string, clipId: string) => void;
   moveClip: (trackId: string, clipId: string, newStart: number) => boolean;
-  trimClip: (
-    trackId: string,
-    clipId: string,
-    inPoint: number,
-    outPoint: number
-  ) => void;
+  trimClip: (trackId: string, clipId: string, inPoint: number, outPoint: number) => void;
 
   // Playback actions
   setCurrentTime: (time: number) => void;
@@ -45,6 +45,15 @@ interface ProjectState {
   setZoom: (zoom: number) => void;
   zoomIn: () => void;
   zoomOut: () => void;
+
+  // Edit actions (cut / trim)
+  splitClipAt: (trackId: string, clipId: string, atTime: number) => boolean;
+  deleteSelectedClip: () => void;
+  updateClipBounds: (
+    trackId: string,
+    clipId: string,
+    patch: Partial<Pick<Clip, "start_time" | "in_point" | "out_point" | "duration">>
+  ) => boolean;
 }
 
 function generateId(): string {
@@ -53,39 +62,59 @@ function generateId(): string {
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
   project: null,
+  media: [],
   currentTime: 0,
   isPlaying: false,
   zoom: 1,
   selectedClipId: null,
   selectedTrackId: null,
 
+  addMedia: (item) =>
+    set((state) => ({
+      media: state.media.some((m) => m.id === item.id) ? state.media : [...state.media, item],
+    })),
+
+  removeMedia: (mediaId) => set((state) => ({ media: state.media.filter((m) => m.id !== mediaId) })),
+
   createProject: (name, config = defaultProjectConfig) => {
     const now = new Date().toISOString();
-    set({
-      project: {
-        id: generateId(),
-        name,
-        tracks: [],
-        config,
-        created_at: now,
-        updated_at: now,
-      },
-      currentTime: 0,
-      isPlaying: false,
-      selectedClipId: null,
-      selectedTrackId: null,
+    set((state) => {
+      state.media.forEach((m) => {
+        if (m.url.startsWith("blob:")) URL.revokeObjectURL(m.url);
+      });
+      return {
+        project: {
+          id: generateId(),
+          name,
+          tracks: [],
+          config,
+          created_at: now,
+          updated_at: now,
+        },
+        media: [],
+        currentTime: 0,
+        isPlaying: false,
+        selectedClipId: null,
+        selectedTrackId: null,
+      };
     });
   },
 
   setProject: (project) => set({ project, currentTime: 0, selectedClipId: null, selectedTrackId: null }),
 
   clearProject: () =>
-    set({
-      project: null,
-      currentTime: 0,
-      isPlaying: false,
-      selectedClipId: null,
-      selectedTrackId: null,
+    set((state) => {
+      state.media.forEach((m) => {
+        if (m.url.startsWith("blob:")) URL.revokeObjectURL(m.url);
+      });
+      return {
+        project: null,
+        media: [],
+        currentTime: 0,
+        isPlaying: false,
+        selectedClipId: null,
+        selectedTrackId: null,
+      };
     }),
 
   addTrack: (name, type) => {
@@ -129,9 +158,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return {
         project: {
           ...state.project,
-          tracks: state.project.tracks.map((t) =>
-            t.id === trackId ? { ...t, muted: !t.muted } : t
-          ),
+          tracks: state.project.tracks.map((t) => (t.id === trackId ? { ...t, muted: !t.muted } : t)),
           updated_at: new Date().toISOString(),
         },
       };
@@ -143,9 +170,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return {
         project: {
           ...state.project,
-          tracks: state.project.tracks.map((t) =>
-            t.id === trackId ? { ...t, locked: !t.locked } : t
-          ),
+          tracks: state.project.tracks.map((t) => (t.id === trackId ? { ...t, locked: !t.locked } : t)),
           updated_at: new Date().toISOString(),
         },
       };
@@ -187,9 +212,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         project: {
           ...state.project,
           tracks: state.project.tracks.map((t) =>
-            t.id === trackId
-              ? { ...t, clips: t.clips.filter((c) => c.id !== clipId) }
-              : t
+            t.id === trackId ? { ...t, clips: t.clips.filter((c) => c.id !== clipId) } : t
           ),
           updated_at: new Date().toISOString(),
         },
@@ -275,4 +298,103 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   zoomIn: () => set((state) => ({ zoom: Math.min(10, state.zoom * 1.2) })),
 
   zoomOut: () => set((state) => ({ zoom: Math.max(0.1, state.zoom / 1.2) })),
+
+  splitClipAt: (trackId, clipId, atTime) => {
+    const state = get();
+    if (!state.project) return false;
+    const track = state.project.tracks.find((t) => t.id === trackId);
+    if (!track || track.locked) return false;
+    const clip = track.clips.find((c) => c.id === clipId);
+    if (!clip) return false;
+    if (atTime <= clip.start_time || atTime >= clip.start_time + clip.duration) return false;
+
+    const leftDuration = atTime - clip.start_time;
+    const left: Clip = {
+      ...clip,
+      id: generateId(),
+      duration: leftDuration,
+      out_point: clip.in_point + leftDuration,
+    };
+    const right: Clip = {
+      ...clip,
+      id: generateId(),
+      start_time: atTime,
+      duration: clip.duration - leftDuration,
+      in_point: clip.in_point + leftDuration,
+    };
+    set((s) => {
+      if (!s.project) return s;
+      return {
+        project: {
+          ...s.project,
+          tracks: s.project.tracks.map((t) =>
+            t.id === trackId
+              ? {
+                  ...t,
+                  clips: [...t.clips.filter((c) => c.id !== clipId), left, right].sort(
+                    (a, b) => a.start_time - b.start_time
+                  ),
+                }
+              : t
+          ),
+          updated_at: new Date().toISOString(),
+        },
+        selectedClipId: right.id,
+      };
+    });
+    return true;
+  },
+
+  deleteSelectedClip: () => {
+    const { project, selectedTrackId, selectedClipId } = get();
+    if (!project || !selectedTrackId || !selectedClipId) return;
+    get().removeClip(selectedTrackId, selectedClipId);
+    set({ selectedClipId: null });
+  },
+
+  updateClipBounds: (trackId, clipId, patch) => {
+    const state = get();
+    if (!state.project) return false;
+    const track = state.project.tracks.find((t) => t.id === trackId);
+    if (!track || track.locked) return false;
+    const clip = track.clips.find((c) => c.id === clipId);
+    if (!clip) return false;
+
+    const inPoint = Math.max(0, patch.in_point ?? clip.in_point);
+    const outPoint = patch.out_point ?? clip.out_point;
+    if (!(outPoint > inPoint)) return false;
+    const start = Math.max(0, patch.start_time ?? clip.start_time);
+    const duration = patch.duration ?? outPoint - inPoint;
+    if (duration <= 0) return false;
+
+    const overlap = track.clips.some(
+      (c) => c.id !== clipId && c.start_time < start + duration && start < c.start_time + c.duration
+    );
+    if (overlap) return false;
+
+    set((s) => {
+      if (!s.project) return s;
+      return {
+        project: {
+          ...s.project,
+          tracks: s.project.tracks.map((t) =>
+            t.id === trackId
+              ? {
+                  ...t,
+                  clips: t.clips
+                    .map((c) =>
+                      c.id === clipId
+                        ? { ...c, start_time: start, in_point: inPoint, out_point: outPoint, duration }
+                        : c
+                    )
+                    .sort((a, b) => a.start_time - b.start_time),
+                }
+              : t
+          ),
+          updated_at: new Date().toISOString(),
+        },
+      };
+    });
+    return true;
+  },
 }));

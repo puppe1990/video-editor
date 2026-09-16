@@ -13,6 +13,9 @@ export function Timeline({ className = "" }: TimelineProps) {
   const setCurrentTime = useProjectStore((s) => s.setCurrentTime);
   const selectedTrackId = useProjectStore((s) => s.selectedTrackId);
   const selectTrack = useProjectStore((s) => s.selectTrack);
+  const splitClipAt = useProjectStore((s) => s.splitClipAt);
+  const deleteSelectedClip = useProjectStore((s) => s.deleteSelectedClip);
+  const selectedClipId = useProjectStore((s) => s.selectedClipId);
 
   if (!project) {
     return (
@@ -21,6 +24,17 @@ export function Timeline({ className = "" }: TimelineProps) {
       </div>
     );
   }
+
+  const canSplit = Boolean(
+    selectedTrackId &&
+    selectedClipId &&
+    project.tracks
+      .find((t) => t.id === selectedTrackId)
+      ?.clips.find(
+        (c) =>
+          c.id === selectedClipId && currentTime > c.start_time && currentTime < c.start_time + c.duration
+      )
+  );
 
   const duration = Math.max(
     30,
@@ -40,12 +54,43 @@ export function Timeline({ className = "" }: TimelineProps) {
     setCurrentTime(Math.max(0, time));
   };
 
+  const ticks = Array.from({ length: 13 }, (_, i) => Math.round((duration / 12) * i));
+
   return (
     <div className={`timeline ${className}`} data-testid="timeline">
       <div className="timeline__header">
-        <span className="timeline__duration">
-          {formatTime(duration)}
+        <span className="timeline__title">TIMELINE • MULTICAMADAS</span>
+        <span className="timeline__tools">
+          <button
+            className="timeline__tool"
+            data-testid="split-btn"
+            disabled={!canSplit}
+            title="Cortar clipe no playhead (C)"
+            onClick={() => {
+              if (selectedTrackId && selectedClipId)
+                splitClipAt(selectedTrackId, selectedClipId, currentTime);
+            }}
+          >
+            ✂ Cortar
+          </button>
+          <button
+            className="timeline__tool timeline__tool--danger"
+            data-testid="delete-clip-btn"
+            disabled={!selectedClipId}
+            title="Excluir clipe selecionado (Del)"
+            onClick={deleteSelectedClip}
+          >
+            Excluir
+          </button>
         </span>
+        <span className="timeline__duration">{formatTime(duration)}</span>
+      </div>
+      <div className="timeline__ruler">
+        {ticks.map((t) => (
+          <span key={t} className="timeline__tick">
+            {formatTime(t)}
+          </span>
+        ))}
       </div>
       <div className="timeline__tracks" onClick={handleTimelineClick}>
         {project.tracks.map((track) => (
@@ -78,28 +123,58 @@ interface TrackRowProps {
 function TrackRow({ track, duration, zoom, isSelected, onSelect }: TrackRowProps) {
   const selectedClipId = useProjectStore((s) => s.selectedClipId);
   const selectClip = useProjectStore((s) => s.selectClip);
+  const media = useProjectStore((s) => s.media);
+  const toggleTrackMute = useProjectStore((s) => s.toggleTrackMute);
+  const toggleTrackLock = useProjectStore((s) => s.toggleTrackLock);
+  const isVideo = track.track_type === "Video";
 
   return (
     <div
-      className={`track-row ${isSelected ? "track-row--selected" : ""}`}
+      className={`track-row ${isSelected ? "track-row--selected" : ""} ${isVideo ? "track-row--video" : "track-row--audio"}`}
       data-testid="track"
       data-track-id={track.id}
       onClick={onSelect}
     >
       <div className="track-row__header">
+        <span
+          className={`track-row__badge ${isVideo ? "track-row__badge--video" : "track-row__badge--audio"}`}
+        >
+          {isVideo ? "V" : "A"}
+        </span>
         <span className="track-row__name">{track.name}</span>
-        <span className="track-row__type">{track.track_type}</span>
+        <span className="track-row__actions">
+          <button
+            className="track-row__mini"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleTrackMute(track.id);
+            }}
+            title="mute"
+          >
+            {track.muted ? "M×" : "M"}
+          </button>
+          <button
+            className="track-row__mini"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleTrackLock(track.id);
+            }}
+            title="lock"
+          >
+            {track.locked ? "▪" : "◦"}
+          </button>
+        </span>
       </div>
       <div className="track-row__clips" style={{ width: `${duration * 10 * zoom}px` }}>
         {track.clips.map((clip) => (
           <div
             key={clip.id}
-            className={`clip ${clip.id === selectedClipId ? "clip--selected" : ""}`}
+            className={`clip ${isVideo ? "clip--video" : "clip--audio"} ${clip.id === selectedClipId ? "clip--selected" : ""}`}
             data-testid="clip"
             data-clip-id={clip.id}
             style={{
               left: `${clip.start_time * 10 * zoom}px`,
-              width: `${clip.duration * 10 * zoom}px`,
+              width: `${Math.max(48, clip.duration * 10 * zoom)}px`,
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -107,7 +182,7 @@ function TrackRow({ track, duration, zoom, isSelected, onSelect }: TrackRowProps
             }}
           >
             <span className="clip__label">
-              {formatTime(clip.duration)}
+              {media.find((m) => m.id === clip.media_id)?.name ?? clip.media_id} • {formatTime(clip.duration)}
             </span>
           </div>
         ))}
@@ -118,13 +193,7 @@ function TrackRow({ track, duration, zoom, isSelected, onSelect }: TrackRowProps
 
 function Playhead({ time, duration, zoom }: { time: number; duration: number; zoom: number }) {
   const position = (time / duration) * duration * 10 * zoom;
-  return (
-    <div
-      className="playhead"
-      data-testid="playhead"
-      style={{ left: `${position}px` }}
-    />
-  );
+  return <div className="playhead" data-testid="playhead" style={{ left: `${position}px` }} />;
 }
 
 function formatTime(seconds: number): string {

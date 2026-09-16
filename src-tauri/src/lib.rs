@@ -3,7 +3,7 @@ pub mod models;
 pub mod services;
 
 use commands::timeline::ProjectState;
-use commands::{media, project, timeline};
+use commands::{export, media, project, timeline};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -21,8 +21,11 @@ pub fn run() {
             timeline::move_clip,
             timeline::trim_clip,
             timeline::delete_clip,
+            timeline::split_clip,
             timeline::add_track,
             timeline::remove_track,
+            export::export_clip,
+            export::export_timeline,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -215,11 +215,15 @@ mod tests {
         let mut project = Project::new("Test", ProjectConfig::default());
 
         let mut video_track = Track::new("Video 1", TrackType::Video);
-        video_track.add_clip(Clip::new("media1", 0.0, 10.0)).unwrap();
+        video_track
+            .add_clip(Clip::new("media1", 0.0, 10.0))
+            .unwrap();
         project.add_track(video_track);
 
         let mut audio_track = Track::new("Audio 1", TrackType::Audio);
-        audio_track.add_clip(Clip::new("audio1", 0.0, 15.0)).unwrap();
+        audio_track
+            .add_clip(Clip::new("audio1", 0.0, 15.0))
+            .unwrap();
         project.add_track(audio_track);
 
         assert_eq!(project.duration(), 15.0);

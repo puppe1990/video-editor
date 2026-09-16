@@ -2,9 +2,10 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 8px 16px;
-  background: #16213e;
-  border-bottom: 1px solid #333;
+  padding: 8px 14px;
+  background: #0e121b;
+  border-bottom: 1px solid #232b3d;
+  justify-content: space-between;
 }
 
 .toolbar__section {
@@ -17,38 +18,90 @@
   margin-left: auto;
 }
 
-.toolbar__btn {
-  padding: 6px 12px;
-  border: none;
-  background: #0f3460;
-  color: #fff;
-  border-radius: 4px;
+.toolbar__home {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid #2a3449;
+  background: transparent;
+  color: #e8ff47;
   cursor: pointer;
   font-size: 13px;
-  transition: background 0.2s;
+  line-height: 1;
+}
+
+.toolbar__home:hover {
+  border-color: #e8ff47;
+}
+
+.toolbar__logo {
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: #e6e9ef;
+}
+
+.toolbar__project-name {
+  color: #e6e9ef;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.toolbar__badge {
+  font-size: 11px;
+  color: #7dd3fc;
+  background: #0e1a2b;
+  border: 1px solid #1e3a52;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: monospace;
+}
+
+.toolbar__btn {
+  padding: 6px 10px;
+  border: 1px solid #2a3449;
+  background: #161c29;
+  color: #dfe4ee;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
 }
 
 .toolbar__btn:hover:not(:disabled) {
-  background: #4285f4;
+  border-color: #38bdf8;
 }
 
 .toolbar__btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .toolbar__btn--active {
-  background: #4285f4;
+  background: #38bdf8;
+  color: #0b0e14;
+  border-color: #38bdf8;
 }
 
 .toolbar__zoom {
-  color: #999;
+  color: #8b94a7;
   font-size: 12px;
-  min-width: 40px;
+  min-width: 44px;
   text-align: center;
+  font-family: monospace;
 }
 
-.toolbar__project-name {
-  color: #666;
+.toolbar__status {
+  font-size: 11px;
+  color: #4ade80;
+}
+
+.toolbar__export {
+  padding: 8px 16px;
+  border: none;
+  background: #e8ff47;
+  color: #0b0e14;
+  border-radius: 7px;
+  font-weight: 800;
   font-size: 12px;
+  cursor: pointer;
 }

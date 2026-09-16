@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useProjectStore } from "./projectStore";
-import { createMockProject, createMockTrack, createMockClip } from "../test/utils";
+import { createMockProject, createMockClip } from "../test/utils";
 
 describe("projectStore", () => {
   beforeEach(() => {

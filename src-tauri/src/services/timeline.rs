@@ -40,9 +40,7 @@ impl TimelineService {
         track
             .move_clip(clip_id, new_start)
             .map_err(|e| match e.as_str() {
-                "Track is locked" => {
-                    TimelineError::InvalidOperation("Track is locked".to_string())
-                }
+                "Track is locked" => TimelineError::InvalidOperation("Track is locked".to_string()),
                 s if s.starts_with("Clip") && s.ends_with("not found") => {
                     TimelineError::ClipNotFound(clip_id.to_string())
                 }
@@ -61,15 +59,13 @@ impl TimelineService {
             .get_track_mut(track_id)
             .ok_or_else(|| TimelineError::TrackNotFound(track_id.to_string()))?;
 
-        track
-            .trim_clip(clip_id, in_point, out_point)
-            .map_err(|e| {
-                if e.ends_with("not found") {
-                    TimelineError::ClipNotFound(clip_id.to_string())
-                } else {
-                    TimelineError::InvalidOperation(e)
-                }
-            })
+        track.trim_clip(clip_id, in_point, out_point).map_err(|e| {
+            if e.ends_with("not found") {
+                TimelineError::ClipNotFound(clip_id.to_string())
+            } else {
+                TimelineError::InvalidOperation(e)
+            }
+        })
     }
 
     pub fn delete_clip(
@@ -83,7 +79,7 @@ impl TimelineService {
 
         track
             .remove_clip(clip_id)
-            .map_err(|e| TimelineError::ClipNotFound(e))
+            .map_err(TimelineError::ClipNotFound)
     }
 
     pub fn split_clip(
@@ -112,7 +108,7 @@ impl TimelineService {
 
         track
             .trim_clip(clip_id, clip.in_point, clip.in_point + split_duration)
-            .map_err(|e| TimelineError::InvalidOperation(e))?;
+            .map_err(TimelineError::InvalidOperation)?;
 
         let new_clip = Clip {
             id: uuid::Uuid::new_v4().to_string(),
@@ -125,7 +121,7 @@ impl TimelineService {
 
         track
             .add_clip(new_clip.clone())
-            .map_err(|e| TimelineError::OverlapError(e))?;
+            .map_err(TimelineError::OverlapError)?;
 
         Ok(new_clip)
     }
@@ -142,7 +138,10 @@ impl TimelineService {
             .map_err(|_| TimelineError::TrackNotFound(track_id.to_string()))
     }
 
-    pub fn reorder_tracks(project: &mut Project, track_order: &[String]) -> Result<(), TimelineError> {
+    pub fn reorder_tracks(
+        project: &mut Project,
+        track_order: &[String],
+    ) -> Result<(), TimelineError> {
         if track_order.len() != project.tracks.len() {
             return Err(TimelineError::InvalidOperation(
                 "Track order length mismatch".to_string(),
@@ -219,15 +218,14 @@ mod tests {
     #[test]
     fn test_add_overlapping_clip_fails() {
         let (mut project, track_id) = create_test_project();
-        TimelineService::add_clip_to_track(
+        TimelineService::add_clip_to_track(&mut project, &track_id, Clip::new("media1", 0.0, 5.0))
+            .unwrap();
+
+        let result = TimelineService::add_clip_to_track(
             &mut project,
             &track_id,
-            Clip::new("media1", 0.0, 5.0),
-        )
-        .unwrap();
-
-        let result =
-            TimelineService::add_clip_to_track(&mut project, &track_id, Clip::new("media2", 3.0, 5.0));
+            Clip::new("media2", 3.0, 5.0),
+        );
         assert!(matches!(result, Err(TimelineError::OverlapError(_))));
     }
 
@@ -269,10 +267,7 @@ mod tests {
         project.get_track_mut(&track_id).unwrap().locked = true;
 
         let result = TimelineService::move_clip(&mut project, &track_id, &clip_id, 10.0);
-        assert!(matches!(
-            result,
-            Err(TimelineError::InvalidOperation(_))
-        ));
+        assert!(matches!(result, Err(TimelineError::InvalidOperation(_))));
     }
 
     #[test]
@@ -391,7 +386,8 @@ mod tests {
         let second_id = second_track.id.clone();
         project.add_track(second_track);
 
-        let result = TimelineService::reorder_tracks(&mut project, &[second_id.clone(), first_id.clone()]);
+        let result =
+            TimelineService::reorder_tracks(&mut project, &[second_id.clone(), first_id.clone()]);
         assert!(result.is_ok());
         assert_eq!(project.tracks[0].id, second_id);
         assert_eq!(project.tracks[1].id, first_id);

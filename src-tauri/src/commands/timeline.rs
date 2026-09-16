@@ -16,6 +16,12 @@ impl ProjectState {
     }
 }
 
+impl Default for ProjectState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[tauri::command]
 pub async fn add_clip_to_track(
     state: State<'_, ProjectState>,
@@ -71,10 +77,22 @@ pub async fn delete_clip(
 }
 
 #[tauri::command]
-pub async fn add_track(
+pub async fn split_clip(
     state: State<'_, ProjectState>,
-    track: Track,
+    track_id: String,
+    clip_id: String,
+    at_time: f64,
 ) -> Result<(), String> {
+    let mut project = state.project.lock().unwrap();
+    let project = project.as_mut().ok_or("No project loaded")?;
+
+    TimelineService::split_clip(project, &track_id, &clip_id, at_time)
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn add_track(state: State<'_, ProjectState>, track: Track) -> Result<(), String> {
     let mut project = state.project.lock().unwrap();
     let project = project.as_mut().ok_or("No project loaded")?;
 
@@ -83,10 +101,7 @@ pub async fn add_track(
 }
 
 #[tauri::command]
-pub async fn remove_track(
-    state: State<'_, ProjectState>,
-    track_id: String,
-) -> Result<(), String> {
+pub async fn remove_track(state: State<'_, ProjectState>, track_id: String) -> Result<(), String> {
     let mut project = state.project.lock().unwrap();
     let project = project.as_mut().ok_or("No project loaded")?;
 
