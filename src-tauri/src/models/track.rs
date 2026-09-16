@@ -32,10 +32,7 @@ impl Track {
     }
 
     pub fn duration(&self) -> f64 {
-        self.clips
-            .iter()
-            .map(|c| c.end_time())
-            .fold(0.0, f64::max)
+        self.clips.iter().map(|c| c.end_time()).fold(0.0, f64::max)
     }
 
     pub fn add_clip(&mut self, clip: Clip) -> Result<(), String> {
@@ -54,7 +51,8 @@ impl Track {
         }
 
         self.clips.push(clip);
-        self.clips.sort_by(|a, b| a.start_time.partial_cmp(&b.start_time).unwrap());
+        self.clips
+            .sort_by(|a, b| a.start_time.partial_cmp(&b.start_time).unwrap());
         Ok(())
     }
 
@@ -98,11 +96,17 @@ impl Track {
         }
 
         self.get_clip_mut(clip_id).unwrap().move_to(new_start);
-        self.clips.sort_by(|a, b| a.start_time.partial_cmp(&b.start_time).unwrap());
+        self.clips
+            .sort_by(|a, b| a.start_time.partial_cmp(&b.start_time).unwrap());
         Ok(())
     }
 
-    pub fn trim_clip(&mut self, clip_id: &str, in_point: f64, out_point: f64) -> Result<(), String> {
+    pub fn trim_clip(
+        &mut self,
+        clip_id: &str,
+        in_point: f64,
+        out_point: f64,
+    ) -> Result<(), String> {
         if self.locked {
             return Err("Track is locked".to_string());
         }

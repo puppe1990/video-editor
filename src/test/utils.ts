@@ -1,4 +1,4 @@
-import type { Project, Track, Clip, ProjectConfig, TrackType } from "../types";
+import type { Project, Track, Clip, TrackType } from "../types";
 import { defaultProjectConfig } from "../types";
 
 export function createMockClip(overrides: Partial<Clip> = {}): Clip {

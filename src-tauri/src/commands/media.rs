@@ -1,3 +1,4 @@
+use crate::commands::export::probe_media;
 use crate::models::clip::{MediaInfo, MediaType};
 
 #[tauri::command]
@@ -16,23 +17,22 @@ pub async fn import_media(path: String) -> Result<MediaInfo, String> {
         _ => return Err(format!("Unsupported file type: {}", path)),
     };
 
+    let probe = probe_media(&path);
+
     Ok(MediaInfo {
         id: uuid::Uuid::new_v4().to_string(),
         path,
         name,
-        duration: 0.0,
-        width: 0,
-        height: 0,
-        fps: 0.0,
+        duration: probe.duration,
+        width: probe.width,
+        height: probe.height,
+        fps: probe.fps,
         media_type,
     })
 }
 
 #[tauri::command]
-pub async fn get_media_thumbnail(
-    _path: String,
-    _time: f64,
-) -> Result<Vec<u8>, String> {
+pub async fn get_media_thumbnail(_path: String, _time: f64) -> Result<Vec<u8>, String> {
     Ok(Vec::new())
 }
 
@@ -42,21 +42,27 @@ mod tests {
 
     #[tokio::test]
     async fn test_import_video_media() {
-        let result = import_media("/path/to/video.mp4".to_string()).await.unwrap();
+        let result = import_media("/path/to/video.mp4".to_string())
+            .await
+            .unwrap();
         assert_eq!(result.name, "video.mp4");
         assert_eq!(result.media_type, MediaType::Video);
     }
 
     #[tokio::test]
     async fn test_import_audio_media() {
-        let result = import_media("/path/to/audio.mp3".to_string()).await.unwrap();
+        let result = import_media("/path/to/audio.mp3".to_string())
+            .await
+            .unwrap();
         assert_eq!(result.name, "audio.mp3");
         assert_eq!(result.media_type, MediaType::Audio);
     }
 
     #[tokio::test]
     async fn test_import_image_media() {
-        let result = import_media("/path/to/image.png".to_string()).await.unwrap();
+        let result = import_media("/path/to/image.png".to_string())
+            .await
+            .unwrap();
         assert_eq!(result.name, "image.png");
         assert_eq!(result.media_type, MediaType::Image);
     }
@@ -69,7 +75,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_thumbnail_returns_empty() {
-        let result = get_media_thumbnail("/path/to/video.mp4".to_string(), 5.0).await.unwrap();
+        let result = get_media_thumbnail("/path/to/video.mp4".to_string(), 5.0)
+            .await
+            .unwrap();
         assert!(result.is_empty());
     }
 }

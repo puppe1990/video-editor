@@ -61,6 +61,20 @@ export interface MediaInfo {
 
 export type MediaType = "Video" | "Audio" | "Image";
 
+export interface MediaItem {
+  id: string;
+  name: string;
+  /** filesystem path (Tauri) — empty when imported via browser file picker */
+  path: string;
+  /** playable URL: object URL (browser) or asset-protocol URL (Tauri) */
+  url: string;
+  duration: number;
+  width: number;
+  height: number;
+  fps: number;
+  media_type: MediaType;
+}
+
 export const FULL_HD: Resolution = { width: 1920, height: 1080 };
 export const HD: Resolution = { width: 1280, height: 720 };
 export const UHD_4K: Resolution = { width: 3840, height: 2160 };

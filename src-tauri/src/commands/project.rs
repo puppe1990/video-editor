@@ -8,30 +8,26 @@ pub async fn create_project(name: String, config: ProjectConfig) -> Result<Proje
 #[tauri::command]
 pub async fn save_project(project: Project, path: String) -> Result<(), String> {
     let json = serde_json::to_string_pretty(&project).map_err(|e| e.to_string())?;
-    tokio::fs::write(&path, json)
-        .await
-        .map_err(|e| e.to_string())?;
+    std::fs::write(&path, json).map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn load_project(path: String) -> Result<Project, String> {
-    let json = tokio::fs::read_to_string(&path)
-        .await
-        .map_err(|e| e.to_string())?;
+    let json = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
     serde_json::from_str(&json).map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{Resolution};
     use crate::models::track::{Track, TrackType};
+    use crate::models::Resolution;
 
-    #[tokio::test]
-    async fn test_create_project() {
+    #[test]
+    fn test_create_project() {
         let config = ProjectConfig::default();
-        let project = create_project("Test Project".to_string(), config).await.unwrap();
+        let project = crate::models::Project::new("Test Project", config);
 
         assert_eq!(project.name, "Test Project");
         assert!(project.tracks.is_empty());
@@ -59,7 +55,7 @@ mod tests {
         assert_eq!(loaded.tracks.len(), project.tracks.len());
         assert_eq!(loaded.config.resolution.width, 1920);
 
-        tokio::fs::remove_file(temp_path).await.ok();
+        std::fs::remove_file(temp_path).ok();
     }
 
     #[test]
